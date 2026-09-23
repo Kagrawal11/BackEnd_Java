@@ -1,2 +1,0 @@
-INDEX VERSION 1.134+C:\Users\bhagy\git\New folder\BackEnd_Java\BackEnd_Java\.metadata\.plugins\org.eclipse.jdt.core
-1865797976.index

@@ -4,6 +4,7 @@ import com.example.filter.JwtAuthFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 // import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,9 +29,13 @@ public class SecurityConfig {
                                 .formLogin(form -> form.disable()) // form login disable temp
                                 .httpBasic(basic -> basic.disable()) // basic disable
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/api/auth/**").permitAll()
-                                                .anyRequest().permitAll() // abhi rehne de
-                                // .anyRequest().authenticated()
+                                                .requestMatchers("/api/auth/**", "/oauth2/**", "/login/**").permitAll()
+                                                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/tours/**", "/api/categories/**",
+                                                                "/api/Search/**", "/images/**")
+                                                .permitAll()
+                                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                                                .anyRequest().authenticated()
                                 ).oauth2Login(oauth -> oauth
                                                 .successHandler(oAuth2SuccessHandler))
 
