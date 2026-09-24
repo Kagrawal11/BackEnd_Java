@@ -21,9 +21,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
 
@@ -56,7 +58,7 @@ public class AuthService {
 
         if (repository.findByEmail(dto.getEmail()).isPresent()) {
             logger.warn("Registration failed: Email {} already exists", dto.getEmail());
-            throw new RuntimeException("Email already registered");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
 
         CustomerMaster entity = new CustomerMaster();
@@ -83,14 +85,14 @@ public class AuthService {
     public String login(LoginDTO dto) {
 
         CustomerMaster user = repository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
 
         if (user.getAuthProvider() != AuthProvider.LOCAL) {
-            throw new RuntimeException("Please login using " + user.getAuthProvider());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please login using " + user.getAuthProvider());
         }
 
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid email or password");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
 
         return jwtUtil.generateToken(user.getEmail(), user.getCustomerRole().name());
@@ -99,7 +101,7 @@ public class AuthService {
     public void sendResetToken(String email) {
 
         CustomerMaster customerMaster = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         String token = jwtUtil.generateResetToken(email);
 
@@ -116,13 +118,13 @@ public class AuthService {
     public void resetPassword(ResetPasswordDTO dto) {
 
         if (!jwtUtil.isResetTokenValid(dto.getToken())) {
-            throw new RuntimeException("Invalid or expired token");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token");
         }
 
         String email = jwtUtil.extractUsername(dto.getToken());
 
         CustomerMaster user = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
         repository.save(user);
@@ -135,7 +137,7 @@ public class AuthService {
 
     public CustomerModel getCustomerProfile(String email) {
         CustomerMaster customer = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
 
         CustomerModel model = mapper.toModel(customer);
         model.setPassword(null); // 🔒 never expose password
@@ -147,7 +149,7 @@ public class AuthService {
     public CustomerModel updateCustomerProfile(String email, CustomerDTO dto) {
 
         CustomerMaster customer = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
 
         // updatable fields
         customer.setFirstName(dto.getFirstName());
@@ -172,17 +174,17 @@ public class AuthService {
     public CustomerIdDTO getCustomerIdByEmail(String email) {
 
         CustomerMaster customer = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
 
         return new CustomerIdDTO(customer.getId());
     }
 
     public void changePassword(String email, String oldPassword, String newPassword) {
         CustomerMaster customer = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
 
         if (!passwordEncoder.matches(oldPassword, customer.getPassword())) {
-            throw new RuntimeException("Invalid old password");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid old password");
         }
 
         customer.setPassword(passwordEncoder.encode(newPassword));
@@ -218,8 +220,10 @@ public class AuthService {
 
                 return jwtUtil.generateToken(user.getEmail(), user.getCustomerRole().name());
             } else {
-                throw new RuntimeException("Invalid ID token.");
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid ID token.");
             }
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Error verifying Google token", e);
             throw new RuntimeException("Google Sign-In failed");
