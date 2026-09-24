@@ -1,6 +1,8 @@
 package com.example.GlobalExceptionHandler;
 
 import com.example.util.ErrorResponse1;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // Validation Error
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -58,6 +62,7 @@ public class GlobalExceptionHandler {
     // Fallback for other exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse1> handleAll(Exception ex) {
+        logger.error("Unhandled exception", ex);
         return new ResponseEntity<>(new ErrorResponse1("Something went wrong", 500), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
