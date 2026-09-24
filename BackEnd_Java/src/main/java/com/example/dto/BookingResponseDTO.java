@@ -7,12 +7,17 @@ import java.util.List;
 public class BookingResponseDTO {
 
     private Integer bookingId;
+    private Integer customerId;
     private LocalDate bookingDate;
     private Integer noOfPax;
     private BigDecimal totalAmount;
     private String status;
     private String statusName;
     private List<TourGuideDTO> guides;
+    private String tourName;
+    private String tourImage;
+    private List<PassengerDTO> passengers;
+    private List<PaymentInfoDTO> payments;
 
     // getters & setters
     public Integer getBookingId() {
@@ -69,5 +74,45 @@ public class BookingResponseDTO {
 
     public void setGuides(List<TourGuideDTO> guides) {
         this.guides = guides;
+    }
+
+    public Integer getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(Integer customerId) {
+        this.customerId = customerId;
+    }
+
+    public String getTourName() {
+        return tourName;
+    }
+
+    public void setTourName(String tourName) {
+        this.tourName = tourName;
+    }
+
+    public String getTourImage() {
+        return tourImage;
+    }
+
+    public void setTourImage(String tourImage) {
+        this.tourImage = tourImage;
+    }
+
+    public List<PassengerDTO> getPassengers() {
+        return passengers;
+    }
+
+    public void setPassengers(List<PassengerDTO> passengers) {
+        this.passengers = passengers;
+    }
+
+    public List<PaymentInfoDTO> getPayments() {
+        return payments;
+    }
+
+    public void setPayments(List<PaymentInfoDTO> payments) {
+        this.payments = payments;
     }
 }
