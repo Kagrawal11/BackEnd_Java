@@ -10,6 +10,7 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -43,6 +44,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse1> handleNotFound(ResourceNotFoundException ex) {
         return new ResponseEntity<>(new ErrorResponse1(ex.getMessage(), 404), HttpStatus.NOT_FOUND);
+    }
+
+    // Explicit status thrown by controllers (e.g. 403 Forbidden for cross-user access) -
+    // must be handled before the generic Exception fallback or its real status is lost
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse1> handleResponseStatus(ResponseStatusException ex) {
+        int code = ex.getStatusCode().value();
+        String msg = ex.getReason() != null ? ex.getReason() : ex.getStatusCode().toString();
+        return new ResponseEntity<>(new ErrorResponse1(msg, code), ex.getStatusCode());
     }
 
     // Fallback for other exceptions
