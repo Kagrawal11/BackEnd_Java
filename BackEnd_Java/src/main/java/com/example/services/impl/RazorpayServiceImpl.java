@@ -6,6 +6,7 @@ import com.example.entities.BookingHeader;
 import com.example.entities.PaymentMaster;
 import com.example.repositories.BookingRepository;
 import com.example.repositories.PaymentRepository;
+import com.example.services.EmailService;
 import com.example.services.PaymentGatewayService;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
@@ -25,16 +26,19 @@ public class RazorpayServiceImpl implements PaymentGatewayService {
     private final RazorpayClient razorpayClient;
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
+    private final EmailService emailService;
 
     @Value("${razorpay.webhook.secret}")
     private String webhookSecret;
 
     public RazorpayServiceImpl(RazorpayClient razorpayClient,
             BookingRepository bookingRepository,
-            PaymentRepository paymentRepository) {
+            PaymentRepository paymentRepository,
+            EmailService emailService) {
         this.razorpayClient = razorpayClient;
         this.bookingRepository = bookingRepository;
         this.paymentRepository = paymentRepository;
+        this.emailService = emailService;
     }
 
     @Override
@@ -69,6 +73,12 @@ public class RazorpayServiceImpl implements PaymentGatewayService {
         bookingRepository.updateBookingStatus(
                 payment.getBooking().getId(),
                 2);
+
+        try {
+            emailService.sendBookingConfirmation(payment.getId().longValue());
+        } catch (Exception e) {
+            System.err.println("⚠️ Booking confirmation email failed: " + e.getMessage());
+        }
     }
 
     @Override
@@ -137,11 +147,16 @@ public class RazorpayServiceImpl implements PaymentGatewayService {
     public void handleWebhook(String payload, String signature) {
 
         try {
-            // TEMP FIX – signature verification OFF
-            // if (!Utils.verifyWebhookSignature(payload, signature, webhookSecret)) {
-            // return;
-            // }
+            if (!Utils.verifyWebhookSignature(payload, signature, webhookSecret)) {
+                throw new SecurityException("Invalid webhook signature");
+            }
+        } catch (SecurityException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new SecurityException("Invalid webhook signature", e);
+        }
 
+        try {
             System.out.println("🔥 WEBHOOK HIT");
             System.out.println(payload);
 
@@ -186,6 +201,12 @@ public class RazorpayServiceImpl implements PaymentGatewayService {
             bookingRepository.updateBookingStatus(
                     payment.getBooking().getId(),
                     2);
+
+            try {
+                emailService.sendBookingConfirmation(payment.getId().longValue());
+            } catch (Exception e) {
+                System.err.println("⚠️ Booking confirmation email failed: " + e.getMessage());
+            }
 
         } catch (Exception e) {
             System.err.println("❌ Webhook processing failed: " + e.getMessage());

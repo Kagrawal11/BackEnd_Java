@@ -41,8 +41,10 @@ public class PaymentGatewayController {
 
         try {
             paymentGatewayService.handleWebhook(payload, signature);
+        } catch (SecurityException e) {
+            // signature verification failed - reject, do not process
+            return ResponseEntity.badRequest().body("Invalid signature");
         } catch (Exception e) {
-            // webhook must ALWAYS return 200
             e.printStackTrace();
         }
         return ResponseEntity.ok("OK");
