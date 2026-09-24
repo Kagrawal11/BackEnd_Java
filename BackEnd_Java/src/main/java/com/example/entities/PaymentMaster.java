@@ -23,7 +23,6 @@ public class PaymentMaster {
     @Column(name = "payment_date", nullable = false)
     private Instant paymentDate;
 
-    @Lob
     @Column(name = "payment_mode", nullable = false)
     private String paymentMode;
 

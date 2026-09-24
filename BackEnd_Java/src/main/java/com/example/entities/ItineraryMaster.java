@@ -21,7 +21,6 @@ public class ItineraryMaster {
     @Column(name = "day_no", nullable = false)
     private Integer dayNo;
     
-    @Lob
     @Column(name = "itinerary_detail", nullable = false)
     private String itineraryDetail;
 

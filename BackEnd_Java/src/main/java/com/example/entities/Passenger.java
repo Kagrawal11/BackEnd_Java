@@ -26,7 +26,6 @@ public class Passenger {
     @Column(name = "pax_birthdate", nullable = false)
     private LocalDate paxBirthdate;
 
-    @Lob
     @Column(name = "pax_type", nullable = false)
     private String paxType;
 

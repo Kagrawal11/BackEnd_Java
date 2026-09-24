@@ -31,7 +31,6 @@ public class CustomerMaster {
     @Column(name = "phone", length = 20)
     private String phone;
 
-    @Lob
     @Column(name = "address")
     private String address;
 
@@ -45,13 +44,11 @@ public class CustomerMaster {
     private String password;
 
     @ColumnDefault("'CUSTOMER'")
-    @Lob
     @Enumerated(EnumType.STRING)
     @Column(name = "customer_role", nullable = false)
     private CustomerRole customerRole;
 
     @ColumnDefault("'LOCAL'")
-    @Lob
     @Enumerated(EnumType.STRING)
     @Column(name = "auth_provider", nullable = false)
     private AuthProvider authProvider;
