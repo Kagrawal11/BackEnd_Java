@@ -13,7 +13,9 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EmailServiceImpl implements EmailService {
@@ -44,6 +46,13 @@ public class EmailServiceImpl implements EmailService {
 	}
 
 	// ---------- BOOKING CONFIRMATION ----------
+	// Fire-and-forget: this must never block the payment confirmation request.
+	// Render's free tier can't complete outbound SMTP to Gmail (port blocked/
+	// unreachable), and mailSender.send() has no configured timeout, so a
+	// synchronous call here was hanging the whole confirm-payment response for
+	// well over a minute even though the payment itself already succeeded.
+	@Async
+	@Transactional(readOnly = true)
 	@Override
 	public void sendBookingConfirmation(Long paymentId) {
 
