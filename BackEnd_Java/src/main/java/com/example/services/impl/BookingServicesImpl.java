@@ -2,6 +2,8 @@ package com.example.services.impl;
 
 import com.example.dto.BookingCreateRequestDTO;
 import com.example.dto.BookingResponseDTO;
+import com.example.dto.PassengerDTO;
+import com.example.dto.PaymentInfoDTO;
 import com.example.dto.TourGuideDTO;
 import com.example.entities.*;
 import com.example.repositories.BookingRepository;
@@ -100,25 +102,69 @@ public class BookingServicesImpl implements BookingService {
         dto.setNoOfPax(booking.getNoOfPax());
         dto.setTotalAmount(booking.getTotalAmount());
 
+        if (booking.getCustomer() != null) {
+            dto.setCustomerId(booking.getCustomer().getId());
+        }
+
         // ✅ STATUS STRING
         if (booking.getStatus() != null) {
             dto.setStatus(booking.getStatus().getStatusName());
             dto.setStatusName(booking.getStatus().getStatusName());
         }
 
-        // ✅ TOUR GUIDES
-        if (booking.getTour() != null && booking.getTour().getTourGuides() != null) {
-            List<TourGuideDTO> guides = booking.getTour().getTourGuides().stream()
-                    .map(g -> {
-                        TourGuideDTO gDto = new TourGuideDTO();
-                        gDto.setId(g.getId());
-                        gDto.setName(g.getName());
-                        gDto.setEmail(g.getEmail());
-                        gDto.setPhone(g.getPhone());
-                        return gDto;
+        // ✅ TOUR GUIDES + NAME/IMAGE (name = category name, same as InvoiceServiceImpl)
+        if (booking.getTour() != null) {
+            if (booking.getTour().getCategory() != null) {
+                dto.setTourName(booking.getTour().getCategory().getCategoryName());
+                dto.setTourImage(booking.getTour().getCategory().getImagePath());
+            }
+
+            if (booking.getTour().getTourGuides() != null) {
+                List<TourGuideDTO> guides = booking.getTour().getTourGuides().stream()
+                        .map(g -> {
+                            TourGuideDTO gDto = new TourGuideDTO();
+                            gDto.setId(g.getId());
+                            gDto.setName(g.getName());
+                            gDto.setEmail(g.getEmail());
+                            gDto.setPhone(g.getPhone());
+                            return gDto;
+                        })
+                        .collect(Collectors.toList());
+                dto.setGuides(guides);
+            }
+        }
+
+        // ✅ PASSENGERS
+        if (booking.getPassengers() != null) {
+            List<PassengerDTO> passengers = booking.getPassengers().stream()
+                    .map(p -> {
+                        PassengerDTO pDto = new PassengerDTO();
+                        pDto.setId(p.getId());
+                        pDto.setBookingId(booking.getId());
+                        pDto.setPaxName(p.getPaxName());
+                        pDto.setPaxBirthdate(p.getPaxBirthdate());
+                        pDto.setPaxType(p.getPaxType());
+                        pDto.setPaxAmount(p.getPaxAmount());
+                        return pDto;
                     })
                     .collect(Collectors.toList());
-            dto.setGuides(guides);
+            dto.setPassengers(passengers);
+        }
+
+        // ✅ PAYMENTS
+        if (booking.getPaymentMasters() != null) {
+            List<PaymentInfoDTO> payments = booking.getPaymentMasters().stream()
+                    .map(p -> {
+                        PaymentInfoDTO payDto = new PaymentInfoDTO();
+                        payDto.setId(p.getId());
+                        payDto.setStatus(p.getPaymentStatus());
+                        payDto.setAmount(p.getPaymentAmount());
+                        payDto.setMode(p.getPaymentMode());
+                        payDto.setPaymentDate(p.getPaymentDate());
+                        return payDto;
+                    })
+                    .collect(Collectors.toList());
+            dto.setPayments(payments);
         }
 
         return dto;
