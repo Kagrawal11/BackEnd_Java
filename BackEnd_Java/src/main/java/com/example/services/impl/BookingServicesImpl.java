@@ -74,6 +74,7 @@ public class BookingServicesImpl implements BookingService {
             booking.setNoOfPax(dto.getNoOfPax());
             booking.setTourAmount(tourAmount);
             booking.setTaxes(taxes);
+            booking.setTotalAmount(tourAmount.add(taxes));
 
             BookingHeader saved = bookingRepository.save(booking);
             return mapToResponseDTO(saved);

@@ -39,9 +39,7 @@ public class BookingHeader {
     @Column(
     	    name = "total_amount",
     	    precision = 10,
-    	    scale = 2,
-    	    insertable = false,
-    	    updatable = false
+    	    scale = 2
     	)
     	private BigDecimal totalAmount;
 
