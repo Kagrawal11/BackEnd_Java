@@ -18,4 +18,10 @@ public interface PaymentGatewayService {
     
     void confirmPayment(String orderId, String paymentId, Long amount);
 
+    /**
+     * Best-effort refund for a booking's successful payment. Never throws -
+     * cancellation must succeed even if the refund call fails.
+     */
+    void refundPayment(Integer bookingId);
+
 }

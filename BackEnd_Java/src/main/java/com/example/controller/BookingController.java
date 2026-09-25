@@ -99,6 +99,22 @@ public class BookingController {
         return bookingService.getPaymentStatus(bookingId);
     }
 
+    // CANCEL BOOKING (customer who owns it, or admin) - best-effort refund included
+    @PostMapping("/{bookingId}/cancel")
+    public BookingResponseDTO cancelBooking(@PathVariable Integer bookingId, Authentication authentication) {
+
+        BookingResponseDTO booking = bookingService.getBookingById(bookingId);
+
+        if (!isAdmin(authentication)) {
+            Integer ownId = authService.getCustomerIdByEmail(authentication.getName()).getCustomerId();
+            if (!ownId.equals(booking.getCustomerId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            }
+        }
+
+        return bookingService.cancelBooking(bookingId);
+    }
+
     // GET INVOICE PDF
     @GetMapping("/invoice/{bookingId}")
     public ResponseEntity<byte[]> getBookingInvoice(@PathVariable Integer bookingId) {

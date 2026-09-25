@@ -34,7 +34,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/auth/**", "/oauth2/**", "/login/**").permitAll()
                                                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/tours/**", "/api/categories/**",
-                                                                "/api/Search/**", "/images/**")
+                                                                "/api/Search/**", "/images/**", "/api/reviews/**")
                                                 .permitAll()
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                                 .anyRequest().authenticated()

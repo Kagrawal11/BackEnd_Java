@@ -16,8 +16,17 @@ public class BookingResponseDTO {
     private List<TourGuideDTO> guides;
     private String tourName;
     private String tourImage;
+    private LocalDate departDate;
     private List<PassengerDTO> passengers;
     private List<PaymentInfoDTO> payments;
+
+    public LocalDate getDepartDate() {
+        return departDate;
+    }
+
+    public void setDepartDate(LocalDate departDate) {
+        this.departDate = departDate;
+    }
 
     // getters & setters
     public Integer getBookingId() {

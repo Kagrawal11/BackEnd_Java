@@ -8,8 +8,11 @@ import com.example.dto.TourGuideDTO;
 import com.example.entities.*;
 import com.example.repositories.BookingRepository;
 import com.example.services.BookingService;
+import com.example.services.PaymentGatewayService;
 import jakarta.persistence.EntityManager;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,14 +25,20 @@ import jakarta.transaction.Transactional;
 @Transactional
 public class BookingServicesImpl implements BookingService {
 
+    // Matches the seeded booking_status_master rows (PENDING, CONFIRMED, CANCELLED).
+    private static final Integer CANCELLED_STATUS_ID = 3;
+
     private final BookingRepository bookingRepository;
     private final EntityManager entityManager;
+    private final PaymentGatewayService paymentGatewayService;
 
     public BookingServicesImpl(
             BookingRepository bookingRepository,
-            EntityManager entityManager) {
+            EntityManager entityManager,
+            PaymentGatewayService paymentGatewayService) {
         this.bookingRepository = bookingRepository;
         this.entityManager = entityManager;
+        this.paymentGatewayService = paymentGatewayService;
     }
 
     // NEW METHOD
@@ -119,6 +128,9 @@ public class BookingServicesImpl implements BookingService {
                 dto.setTourName(booking.getTour().getCategory().getCategoryName());
                 dto.setTourImage(booking.getTour().getCategory().getImagePath());
             }
+            if (booking.getTour().getDeparture() != null) {
+                dto.setDepartDate(booking.getTour().getDeparture().getDepartDate());
+            }
 
             if (booking.getTour().getTourGuides() != null) {
                 List<TourGuideDTO> guides = booking.getTour().getTourGuides().stream()
@@ -189,6 +201,24 @@ public class BookingServicesImpl implements BookingService {
                 .stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public BookingResponseDTO cancelBooking(Integer bookingId) {
+        BookingHeader booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        if (CANCELLED_STATUS_ID.equals(booking.getStatus().getId())) {
+            return mapToResponseDTO(booking);
+        }
+
+        // Best-effort refund of any successful payment - never blocks cancellation.
+        paymentGatewayService.refundPayment(bookingId);
+
+        bookingRepository.updateBookingStatus(bookingId, CANCELLED_STATUS_ID);
+        entityManager.refresh(booking);
+
+        return mapToResponseDTO(booking);
     }
 
 }

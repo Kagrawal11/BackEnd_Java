@@ -13,6 +13,8 @@ import com.razorpay.RazorpayClient;
 import com.razorpay.Utils;
 import jakarta.transaction.Transactional;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,8 @@ import java.util.Optional;
 
 @Service
 public class RazorpayServiceImpl implements PaymentGatewayService {
+
+    private static final Logger logger = LoggerFactory.getLogger(RazorpayServiceImpl.class);
 
     private final RazorpayClient razorpayClient;
     private final BookingRepository bookingRepository;
@@ -211,6 +215,38 @@ public class RazorpayServiceImpl implements PaymentGatewayService {
         } catch (Exception e) {
             System.err.println("❌ Webhook processing failed: " + e.getMessage());
             throw new RuntimeException("Webhook processing failed", e);
+        }
+    }
+
+    @Override
+    public void refundPayment(Integer bookingId) {
+        Optional<PaymentMaster> successPayment = paymentRepository
+                .findByBooking_IdAndPaymentStatus(bookingId, "SUCCESS");
+
+        if (successPayment.isEmpty()) {
+            // Nothing was ever paid (or already refunded) - nothing to refund.
+            return;
+        }
+
+        PaymentMaster payment = successPayment.get();
+        try {
+            long amountInPaise = payment.getPaymentAmount()
+                    .multiply(BigDecimal.valueOf(100))
+                    .longValueExact();
+
+            JSONObject refundRequest = new JSONObject();
+            refundRequest.put("amount", amountInPaise);
+
+            // transactionRef holds the Razorpay payment id (overwritten with it on
+            // confirmPayment/webhook success).
+            razorpayClient.payments.refund(payment.getTransactionRef(), refundRequest);
+
+            payment.setPaymentStatus("REFUNDED");
+            paymentRepository.save(payment);
+        } catch (Exception e) {
+            // Best-effort: cancellation must still succeed even if the refund call
+            // fails (e.g. already refunded on Razorpay's side, network issue).
+            logger.error("Refund failed for booking {}: {}", bookingId, e.getMessage());
         }
     }
 }

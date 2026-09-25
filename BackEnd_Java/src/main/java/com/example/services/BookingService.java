@@ -17,4 +17,6 @@ public interface BookingService {
 
     List<BookingResponseDTO> getAllBookings();
 
+    BookingResponseDTO cancelBooking(Integer bookingId);
+
 }
